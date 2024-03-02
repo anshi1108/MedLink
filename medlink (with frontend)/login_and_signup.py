@@ -1,12 +1,12 @@
 import tkinter as tk
+import tkinter as ttk
 from tkinter import messagebox
 import re
 import mysql.connector
 from PIL import Image, ImageTk
 from functools import partial
-import patient_homepage
 import doctor_profilepage
-
+import make_appoinment
 
 # MySQL connection parameters
 db_config = {
@@ -80,13 +80,13 @@ def p_signup(p_mail, p_pass, p_name, p_contact):
 
 
 def p_login(p_mail, p_pass):
-    query = "SELECT * FROM patient_info WHERE Contact_no = %s AND Password = %s"
+    query = "SELECT * FROM patient_info WHERE Email= %s AND Password = %s"
     values = (p_mail, p_pass)
     user = fetch_data(query, values)
 
     if user:
         messagebox.showinfo("Login", "Patient login successful!")
-        # Redirect to patient homepage
+        open_main_p()
     else:
         messagebox.showinfo("Login", "Invalid Contact number or password. Please try again!")
 
@@ -99,13 +99,13 @@ def d_signup(d_mail, d_pass, d_name, d_contact, d_qual, d_speciality):
 
 
 def d_login(d_mail, d_pass):
-    query = "SELECT * FROM doctor_info WHERE Contact_no = %s AND Password = %s"
+    query = "SELECT * FROM doctor_info WHERE Email = %s AND Password = %s"
     values = (d_mail, d_pass)
     user = fetch_data(query, values)
 
     if user:
         messagebox.showinfo("Login", "Doctor login successful!")
-        # Redirect to doctor homepage
+        open_main_d()
     else:
         messagebox.showinfo("Login", "Invalid Contact number or password. Please try again!")
 
@@ -129,24 +129,14 @@ def fetch_data(query, values=None):
             cursor.close()
             conn.close()
 
-
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
-
 def open_doctor_window():
     root.withdraw()
     doctor_window = tk.Toplevel(root)
-    # center_window(doctor_window)
     doctor_window.geometry("1000x625")
 
     new_image_path = r"MedLink\medlink (with frontend)\doctor_l.png"
     new_pil_image = Image.open(new_image_path)
     new_tk_image = ImageTk.PhotoImage(new_pil_image)
-    
-# Repeat the same change in open_patient_window
-
-
     new_background_label = tk.Label(doctor_window, image=new_tk_image)
     new_background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
@@ -174,7 +164,7 @@ def open_doctor_window():
         command=doctor_signup_clicked,
         bd=0,  # Border width
         highlightthickness=-1,  # Set to a negative value for transparency
-        bg="#A9BABD",  # Background color (you can set this to an empty string or any transparent color)
+        bg="#A9BABD", 
     )
     signup_button.place(relx=0.70, rely=0.6, anchor="center")
 
@@ -188,7 +178,6 @@ def open_doctor_window():
 def open_patient_window():
     root.withdraw()
     patient_window = tk.Toplevel(root)
-    # center_window(patient_window)
     patient_window.geometry("1000x800")
 
     new_image_path = r"MedLink\medlink (with frontend)\doctor_l.png"
@@ -237,7 +226,6 @@ def open_login_window(user_type):
     root.withdraw()
     login_window = tk.Toplevel(root)
     login_window.title(f"{user_type} Login")
-    # center_window(login_window)
     login_window.geometry("1000x800")
 
     new_image_path = r"MedLink\medlink (with frontend)\login2.png"
@@ -259,14 +247,19 @@ def open_login_window(user_type):
     password_entry = tk.Entry(login_window, width=25, show='*')
     password_entry.place(relx=0.9, rely=0.5, anchor="center")
 
+            
     def login():
         email = email_entry.get()
         password = password_entry.get()
         if validate_email(email) and password:
             if user_type == "Doctor":
                 d_login(email, password)
+                login_window.withdraw()
+                open_main_d()
             else:
                 p_login(email, password)
+                login_window.withdraw()
+                open_main_p()
         else:
             messagebox.showwarning("Login Error", "Please enter a valid email and password.")
             login_window.lift()
@@ -279,7 +272,8 @@ def open_login_window(user_type):
                                 command=lambda: open_signup_window(user_type), width=30, height=1,
                                 bd=0, highlightthickness=0, bg="#A9BABD")
     not_user_button.place(relx=0.70, rely=0.9, anchor="center")
-
+    
+    
     button_width = int(login_window.winfo_screenwidth() / 60)
     button_height = int(login_window.winfo_screenheight() / 250)
     login_button.config(width=button_width, height=button_height)
@@ -291,7 +285,6 @@ def open_signup_window(user_type):
     root.withdraw()
     signup_window = tk.Toplevel(root)
     signup_window.title(f"{user_type} Signup")
-    # center_window(signup_window)
     signup_window.geometry("1000x800")
 
     new_image_path = r"MedLink\medlink (with frontend)\login1.png"
@@ -303,24 +296,24 @@ def open_signup_window(user_type):
 
     new_background_label = tk.Label(signup_window, image=new_tk_image)
     new_background_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-    email_label = tk.Label(signup_window, text="Email:", width=25, height=3, bg="#A9BABD")
-    email_label.place(relx=0.6, rely=0.1, anchor="center")
-
-    email_entry = tk.Entry(signup_window, width=30)
-    email_entry.place(relx=0.7, rely=0.1)
-
-    password_label = tk.Label(signup_window, text="Password:", width=25, height=3, bg="#A9BABD")
-    password_label.place(relx=0.6, rely=0.2, anchor="center")
-
-    password_entry = tk.Entry(signup_window, width=30, show='*')
-    password_entry.place(relx=0.7, rely=0.2)
-
+    
     name_label = tk.Label(signup_window, text="Name:", width=25, height=3, bg="#A9BABD")
-    name_label.place(relx=0.6, rely=0.3, anchor="center")
+    name_label.place(relx=0.6, rely=0.1, anchor="center")
 
     name_entry = tk.Entry(signup_window)
-    name_entry.place(relx=0.7, rely=0.3)
+    name_entry.place(relx=0.7, rely=0.1)
+
+    email_label = tk.Label(signup_window, text="Email:", width=25, height=3, bg="#A9BABD")
+    email_label.place(relx=0.6, rely=0.2, anchor="center")
+
+    email_entry = tk.Entry(signup_window, width=30)
+    email_entry.place(relx=0.7, rely=0.2)
+
+    password_label = tk.Label(signup_window, text="Password:", width=25, height=3, bg="#A9BABD")
+    password_label.place(relx=0.6, rely=0.3, anchor="center")
+
+    password_entry = tk.Entry(signup_window, width=30, show='*')
+    password_entry.place(relx=0.7, rely=0.3)
 
     contact_label = tk.Label(signup_window, text="Contact Number:", width=25, height=3, bg="#A9BABD")
     contact_label.place(relx=0.6, rely=0.4, anchor="center")
@@ -375,14 +368,114 @@ def open_signup_window(user_type):
     already_user_button.config(width=button_width, height=button_height)
     signup_window.mainloop()
 
-def center_window(window):
-    window.update_idletasks()
-    width = window.winfo_width()
-    height = window.winfo_height()
-    x = (window.winfo_screenwidth() // 2) - (width // 2)
-    y = (window.winfo_screenheight() // 2) - (height // 2)
-    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+def open_main_d():
+    # main_d = tk.Toplevel(root)
+    # main_d.geometry("1000x800")
+    # main_d.mainloop()
+    pass
 
+
+def open_main_p():
+    main_p = tk.Toplevel(root)
+    main_p.geometry("1000x800")
+    main_p.title("Information Page")
+    main_p.protocol("WM_DELETE_WINDOW", root.quit)  # Handle closing of main_p window
+    
+     # Create a menu bar
+    menu_bar = tk.Menu(main_p)
+    main_p.config(menu=menu_bar)
+
+    # Create a "Options" menu
+    options_menu = tk.Menu(menu_bar, tearoff=0)
+    menu_bar.add_cascade(label="MY MENU", menu=options_menu,fon=('Helvictica',14))
+
+    # Add menu items with commands
+    options_menu.add_command(label="SHOW APPOINMENTS", command=show_appointments)
+    options_menu.add_command(label="MAKE APPOINMENTS", command=make_appointments)
+    options_menu.add_command(label="VIDEO CONFERNCING", command=video_call)
+    options_menu.add_command(label="CHAT WITH ME", command=launch_chatbot)
+    options_menu.add_command(label="MY PROFILE", command=lambda: create_patient_profile(main_p))
+    main_p.mainloop()
+
+def make_appointments():
+    make_appoinments = tk.Toplevel(root)
+    make_appoinments.geometry("1000x800")
+    make_appoinments.title("Appoinment")
+    make_appoinments.protocol("WM_DELETE_WINDOW", root.quit) 
+    make_appoinment.create_appointment_frame(make_appoinments)
+
+def show_appointments():
+    pass
+
+def video_call():
+    pass
+def launch_chatbot():
+    pass
+
+def create_patient_profile(main_p):
+    
+    # Patient Name
+    name_label = tk.Label(main_p,text="Name:", width=25, height=3, bg="#A9BABD")
+    name_label.place(relx=0.1,rely=0.1)
+
+    name_entry = tk.Entry(main_p)
+    name_entry.place(relx=0.4, rely=0.1)
+    # Patient Age
+    
+    age_label = tk.Label(main_p,text="Age:", width=25, height=3, bg="#A9BABD")
+    age_label.place(relx=0.1,rely=0.2)
+    
+    age_entry = tk.Entry(main_p, width=10)
+    age_entry.place(relx=0.4,rely=0.2)
+
+    # Patient Gender
+    gender_label = tk.Label(main_p,text="Gender:", width=25, height=3, bg="#A9BABD")
+    gender_label.place(relx=0.1,rely=0.3)
+    
+
+    var = tk.StringVar()
+    tk.Radiobutton(main_p, text="Male", variable=var, value="Male", font=("Helvetica", 12)).place(relx=0.4,rely=0.3)
+    tk.Radiobutton(main_p, text="Female", variable=var, value="Female", font=("Helvetica", 12)).place(relx=0.4,rely=0.35)
+    tk.Radiobutton(main_p, text="Other", variable=var, value="Other", font=("Helvetica", 12)).place(relx=0.4,rely=0.4)
+
+    # Patient Diagnosis
+    diagnosis_label = tk.Label(main_p,text="Diagnosis:", width=25, height=3, bg="#A9BABD")
+    diagnosis_label.place(relx=0.1,rely=0.5)
+    
+    diagnosis_entry = tk.Text(main_p, wrap=tk.WORD, width=30, height=5)
+    diagnosis_entry.place(relx=0.4,rely=0.5)
+
+    # Save Button
+    save_button = tk.Button(main_p, text="Save", bg="#A9BABD", command=lambda: save_patient_info(name_entry, age_entry, var, diagnosis_entry), font=("Helvetica", 14))
+    save_button.place(relx=0.1,rely=0.7)
+
+    # Clear Button
+    clear_button = tk.Button(main_p, text="Clear", bg="#A9BABD", command=lambda: clear_fields(name_entry, age_entry, var, diagnosis_entry), font=("Helvetica", 14))
+    clear_button.place(relx=0.1,rely=0.8)
+
+
+    
+    
+def save_patient_info(name_entry,age_entry,var,diagnosis_entry):
+    patient_name = name_entry.get()
+    patient_age = age_entry.get()
+    patient_gender = var.get()
+    patient_diagnosis = diagnosis_entry.get("1.0", tk.END)
+
+    print("Patient Information:")
+    print(f"Name: {patient_name}")
+    print(f"Age: {patient_age}")
+    print(f"Gender: {patient_gender}")
+    print(f"Diagnosis:\n{patient_diagnosis}")
+
+    # Function to clear input fields
+def clear_fields(name_entry,age_entry,var,diagnosis_entry):
+    name_entry.delete(0, tk.END)
+    age_entry.delete(0, tk.END)
+    var.set("Male")  # Set default gender to Male
+    diagnosis_entry.delete("1.0", tk.END)
+
+    
 
 def validate_email(email):
     if re.match(r'^[\w\.-]+@[\w\.-]+$', email):
